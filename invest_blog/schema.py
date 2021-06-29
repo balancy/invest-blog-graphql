@@ -1,6 +1,81 @@
+from django.contrib.auth.models import User
+
 import graphene
+from graphene_django import DjangoObjectType
+
+from education.models import (
+    Category, 
+    Course, 
+    Mentor, 
+    Student, 
+    )
+
+
+class UserType(DjangoObjectType):
+    class Meta:
+        model = User
+        fields = ("id", "username", "is_staff")
+
+
+class CategoryType(DjangoObjectType):
+    class Meta:
+        model = Category
+        fields = ("id", "title", "courses")
+
+
+class MentorType(DjangoObjectType):
+    class Meta:
+        model = Mentor
+        fields = ("id", "status", "user")
+
+
+class CourseType(DjangoObjectType):
+    class Meta:
+        model = Course
+        fields = ("id", "category", "title", "students", "mentors")
+
+
+class StudentType(DjangoObjectType):
+    class Meta:
+        model = Student
+        fields = ("id", "status", "user")
+
 
 class Query(graphene.ObjectType):
-    hello = graphene.String(default_value="Hi!")
+    all_categories = graphene.List(CategoryType)
+    category_by_title = graphene.Field(
+        CategoryType, 
+        title=graphene.String(required=True),
+        )
+    
+    def resolve_all_categories(root, info):
+        return Category.objects.prefetch_related("courses").all()
 
-schema = graphene.Schema(query=Query)
+    def resolve_course_by_title(root, info, title):
+        try:
+            return Course.objects.filter(title__contains=title)
+        except Course.DoesNotExist:
+            return None
+
+
+class CreateCategory(graphene.Mutation):
+    class Arguments:
+        # The input arguments for this mutation
+        title = graphene.String(required=True)
+        id = graphene.ID()
+
+    # The class attributes define the response of the mutation
+    category = graphene.Field(CategoryType)
+
+    @classmethod
+    def mutate(cls, root, info, title):
+        category = Category.objects.create(title=title)
+        # Notice we return an instance of this mutation
+        return CreateCategory(category=category)
+
+
+class CreateCategoryMutation(graphene.ObjectType):
+    create_category = CreateCategory.Field()
+
+
+schema = graphene.Schema(query=Query, mutation=CreateCategoryMutation)
