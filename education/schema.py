@@ -43,19 +43,18 @@ class StudentType(DjangoObjectType):
 
 class Query(graphene.ObjectType):
     all_categories = graphene.List(CategoryType)
-    category_by_title = graphene.Field(
+    category_by_title = graphene.List(
         CategoryType, 
         title=graphene.String(required=True),
-        )
+    )
     
     def resolve_all_categories(root, info):
         return Category.objects.prefetch_related("courses").all()
 
-    def resolve_course_by_title(root, info, title):
-        try:
-            return Course.objects.filter(title__contains=title)
-        except Course.DoesNotExist:
-            return None
+    def resolve_category_by_title(root, info, title=None):
+        categories = Category.objects.all()
+        if title:
+            return categories.filter(title__contains=title)
 
 
 class CreateCategory(graphene.Mutation):

@@ -143,5 +143,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # graphiql
 GRAPHENE = {
-    'SCHEMA': 'invest_blog.schema.schema'
+    'SCHEMA': 'education.schema.schema'
 }
